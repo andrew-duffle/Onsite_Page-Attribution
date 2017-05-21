@@ -1,0 +1,70 @@
+SELECT
+  path,
+  SUM(Transaction) totalConv,
+  SUM(Revenue) AS convValue,
+  SUM(Session - Transaction) AS totalNull
+FROM(
+SELECT
+  DATE(date) AS Date,
+  fullVisitorId,
+  CONCAT(fullVisitorId, STRING(VisitID)) AS sessionID,
+  GROUP_CONCAT_UNQUOTED(CONCAT(hits.page.pagePathLevel1, RTRIM(LTRIM(hits.page.pagePathLevel2,"/"),"/")),">") AS Path,
+  CASE
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.kookaburra-silver-coin.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.silver-koalas-investment.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.kookaburra-coin-with-privy-values.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.buy-lunar-silver-coins.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.silver-panda-coins-purchase.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.pcgs-certified-silver-eagle-coins-investment.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.first-strike-silver-american-eagle-coins.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.buy-certified-american-silver-eagle-proofs.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.first-strike-silver-eagle-proof.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.silver-eagles-proof-investment.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.certified-lunar-silver-coins-values.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.invest-in-certified-silver-panda-coins.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.first-strike-silver-panda-coin-value.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.gold-lunar-coins-value.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.invest-in-gold-panda-coins.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.gold-libertads-investment.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.certified-gold-eagle-investment.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.fs-gold-eagle-coins-investment.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.certified-gold-eagle-value.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.buy-fs-gold-eagle-proofs.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.proof-gold-eagles.|.gold-buffalo-investment.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.first-strike-gold-buffalo-values.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.certified-black-diamond-gold-buffalo-proof-coins.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.pcgs-gold-buffalo-proof.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.proof-gold-buffalo-coins.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.first-strike-gold-buffalo-investment.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.buy-proof-gold-buffalo-coins.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.certified-lunar-gold-coins.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.buy-certified-panda-gold-coins.') THEN 'investorCollections'
+    WHEN REGEXP_MATCH(hits.page.pagePathLevel1,'.first-strike-gold-panda-coins.') THEN 'investorCollections'
+    ELSE CONCAT(hits.page.pagePathLevel1, RTRIM(LTRIM(hits.page.pagePathLevel2,"/"),"/"))
+  END AS page,
+  IFNULL(totals.transactions,0) AS Transaction,
+  IFNULL(totals.transactionRevenue / 1000000,0) AS Revenue,
+  1 AS Session
+FROM
+  TABLE_DATE_RANGE([80391700.ga_sessions_], DATE_ADD(CURRENT_TIMESTAMP(), -20, 'DAY'), CURRENT_TIMESTAMP())
+WHERE
+  hits.page.pagePathLevel1 <> '/cart/'
+  AND hits.page.pagePathLevel1 <> '/CartContents.html'
+  AND hits.page.pagePathLevel1 <> '/opc/'
+  AND hits.page.pagePathLevel1 <> '/checkout/'
+  AND hits.page.pagePathLevel1 <> '/Checkout_Confirmation.html'
+  AND hits.page.pagePathLevel1 <> '/Checkout_PriceExpired.html'
+  AND hits.page.pagePathLevel1 <> '/account/'
+  AND hits.type="PAGE"
+GROUP BY
+  Date,
+  fullVisitorId,
+  sessionID,
+  Revenue,
+  Transaction,
+  Session,
+  page)
+GROUP BY
+  path
+ORDER BY
+  totalConv DESC
